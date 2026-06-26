@@ -42,7 +42,7 @@ import os
 # CONFIG – CHANGE THESE
 # ────────────────────────────────────────────────
 BOT_TOKEN = "8474981056:AAF7pUxMWfioSedNM7wQOlZR5e8pSPDD3FA"  # ← YOUR BOT TOKEN
-PRIVATE_CHANNEL_ID = --1004425395793                             # ← YOUR PRIVATE CHANNEL
+PRIVATE_CHANNEL_ID = -1004425395793                             # ← YOUR PRIVATE CHANNEL
 
 CONTROLLED_DEPOSIT_ADDRESSES = [
     "Hoyeh4eEgDVyATpNrpSUziydcLbZ4EX8rx279PE4P8YC",
