@@ -1,6 +1,3 @@
 python-telegram-bot==22.8
 Flask
-bip_utils
-mnemonic
-solders
-base58
+bip_utils==2.12.1
